@@ -3,3 +3,4 @@ figures/
 .DS_Store
 .ipynb_checkpoints
 *.pyc
+#.m~
