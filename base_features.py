@@ -5,13 +5,18 @@ import numpy as np
 import pandas as pd
 import sys
 
+import librosa
+import vamp
+
+import utils
+
 """ This module provides an interface to several existing audio feature time
     series extractors.
 
     Requires Librosa to be installed, and optional Vamp plug-ins.
 """
 
-def write_features(audio_dir, data_dir, features=None):
+def compute_and_write(audio_dir, data_dir, features=None):
     """Compute frame-based features for all audio files in a folder.
 
     Args:
@@ -24,8 +29,6 @@ def write_features(audio_dir, data_dir, features=None):
             Feature name will be used as the subdirectory to
             which feature CSVs are written.)
         """
-    import librosa
-    import vamp
     
     if features is None:
         features = {'mfcc': get_mfcc, 'hpcp': get_hpcp, 'melody': get_melody}
@@ -44,7 +47,7 @@ def write_features(audio_dir, data_dir, features=None):
                 t, X = func(x, sr)
 
                 track_id = filename.split('.')[-2]
-                write_csv(t, X, [data_dir, feature, track_id])
+                utils.write_feature([t, X], [data_dir, feature, track_id])
 
 
 def get_mfcc(x, sr, n_mfcc=20):
@@ -95,7 +98,7 @@ def get_hpcp(x, sr, n_bins=12, f_min=55, f_ref=440.0, min_magn=-100):
     return t, hpcp
 
 
-def get_melody(x, sr, f_min=55, f_max=1760, min_salience=0.0):
+def get_melody(x, sr, f_min=55, f_max=1760, min_salience=0.0, unvoiced=False):
     """Extract main melody from raw audio using the Melodia Vamp plugin.
     Vamp, vamp python module and plug-in must be installed.
     
@@ -114,35 +117,22 @@ def get_melody(x, sr, f_min=55, f_max=1760, min_salience=0.0):
               'minpeaksalience': min_salience}
     
     data = vamp.collect(x, sr, plugin, parameters=params)
-    vamp_hop, melody = data['vector']
+    vamp_hop, f0 = data['vector']
     
-    melody_cents = 1200*np.log2(melody/55.0)
-    melody_cents[melody<=0] = None
-    melody_cents = melody_cents.reshape((-1,1))
+    if unvoiced:
+        f0 = abs(f0)
+    else:
+        f0[f0 < 0] = None
+
+    hz2midi = lambda f: 69 + 12 * np.log2(abs(f) / 440)
+    
+    melody = hz2midi(f0)
+    melody = melody[:, np.newaxis]
     
     t = float(vamp_hop) * (8 + np.arange(len(melody)))
     
-    return t, melody_cents
-
-
-def write_csv(t, X, filename):
-    """Write frame-based features to CSV.
-
-    Args:
-        t (1d-array): frame times
-        X (2d-array): feature matrix (frames are rows)
-        filename (list or str): file name. If list, will use
-            os.path.join to join dirs and filename. CSV extension will be
-            added if not already included.
-    """
-    if type(filename) is list:
-        filename = os.path.join(*filename)
-    if not (filename.endswith('.csv') or filename.endswith('.txt')):
-        filename += '.csv'
-    
-    data = pd.DataFrame(np.hstack([t.reshape((-1,1)), X]))
-    data.to_csv(filename, header=False, index=False)
+    return t, melody
 
 
 if __name__ == '__main__':
-    write_features(sys.argv[1], sys.argv[2])
+    compute_and_write(sys.argv[1], sys.argv[2])
