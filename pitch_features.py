@@ -170,7 +170,7 @@ def get_chroma(track_id):
         dimension.
     """
     chroma_file = os.path.join(chroma_dir, track_id + '.csv')
-    t, chroma = utils.read_feature(chroma_file)
+    t, chroma = utils.read_feature(chroma_file, time=True)
     return t, chroma
 
 
@@ -181,7 +181,7 @@ def get_melody(track_id):
         Frames in which no pitch is present can be set to 0, None or np.nan.
     """
     melody_file = os.path.join(melody_dir, track_id + '.csv')
-    t, melody = utils.read_feature(melody_file)
+    t, melody = utils.read_feature(melody_file, time=True)
     return t, melody.flatten()
 
 

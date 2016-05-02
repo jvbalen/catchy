@@ -5,7 +5,17 @@ import numpy as np
 import pandas as pd
 
 
-def read_feature(filename, mode='pandas', time=True, skip_cols=(0, None)):
+# what to do if skip_cols == 'auto'
+column_range = {'loudness': (1, None),
+                'sharpness': (1, None),
+                'bands': (1, None),
+                'melody': (1, None),
+                'hpcp': (1, None),
+                'mfcc': (2, 14)
+                }
+
+
+def read_feature(filename, mode='pandas', time=False, skip_cols=(0, None)):
     """Read features from CSV.
 
     This is not a general purpose i/o function. It is written to work well
@@ -21,17 +31,18 @@ def read_feature(filename, mode='pandas', time=True, skip_cols=(0, None)):
         time (bool): set True to split data in a column of frame times and
             2d-array of frame data.
     """
-    if skip_cols = 'auto':
-        dir_name = os.path.dirname(filename)
-        subdir_name = os.path.basename(dir_name)
-        
-        skip_cols = skip_columns(subdir_name)
-
     # if filename is a list, use os.path.join to join
     if type(filename) is list:
         filename = os.path.join(*filename)
     if not (filename.endswith('.csv') or filename.endswith('.txt')):
         filename += '.csv'
+
+    # if no skip_cols 
+    if skip_cols == 'auto':
+        dir_name = os.path.dirname(filename)
+        subdir_name = os.path.basename(dir_name)
+
+        skip_cols = skip_columns(subdir_name)
 
     # pick csv reader
     if mode == 'numpy':
@@ -39,13 +50,13 @@ def read_feature(filename, mode='pandas', time=True, skip_cols=(0, None)):
     elif mode == 'pandas':
         data = pd.read_csv(filename, delimiter=',', header=None).values
 
-    # split time column and frames
+    feature = data[:, skip_cols[0]:skip_cols[1]]
+
+    # if time=True, split first and following columns
     if time:
-        t = data[:, 0]
-        x = data[:, 1+skip_cols[0]:1+skip_cols[1]]
+        t = feature[:, 0]
+        x = feature[:, 1:]
         feature = (t, x)
-    else:
-        feature = data[:, skip_cols[0]:skip_cols[1]]
         
     return feature
 
@@ -93,18 +104,9 @@ def write_feature(data, filename):
     dataframe.to_csv(filename, header=False, index=False)
 
 
-def skip_columns(feature_name):
+def skip_columns(feature_name, default_range=(0,None)):
     """Set automatic column ignore behavior in read_feature().
     """
-    dict_first_col = {'loudness':   1,
-                      'sharpness':  1,
-                      'bands':      1,
-                      'melody':     1,
-                      'hpcp':       1,
-                      'mfcc':       2}
-    dict_last_col = {'mfcc':       14}
-
-    first_col = dict_first_col.get(feature_name, 0)
-    last_col = dict_last_col.get(feature_name, None)
+    first_col, last_col = column_range.get(feature_name, default_range)
 
     return first_col, last_col
