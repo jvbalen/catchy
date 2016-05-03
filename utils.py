@@ -8,11 +8,11 @@ import pandas as pd
 # what to do if skip_cols == 'auto'
 column_range = {'loudness': (1, None),
                 'sharpness': (1, None),
+                'roughness': (1, None),
                 'bands': (1, None),
                 'melody': (1, None),
                 'hpcp': (1, None),
-                'mfcc': (2, 14)
-                }
+                'mfcc': (2, 14)}
 
 
 def read_feature(filename, mode='pandas', time=False, skip_cols=(0, None)):
@@ -110,3 +110,35 @@ def skip_columns(feature_name, default_range=(0,None)):
     first_col, last_col = column_range.get(feature_name, default_range)
 
     return first_col, last_col
+
+
+def dataset_from_dir(audio_dir, separator='-'):
+    """Make a dictionary of song section paths grouped by song id
+    from audio files in a particular directory.
+    Assumes files are labeled 'songid-sectionid.wav', where the
+    dash is the separator specified in the separator parameter.
+    Extension can be 'wav' or 'mp3'.
+
+    Args:
+        audio_dir (str): path to audio dir.
+        separator (str): character or string that separates song
+            id and section id in the audio file names.
+    
+    Returns:
+        segment_dict (dict): dictionary of song segments, containing
+        all segment paths (without extension) as a list, grouped by
+        song id.
+    """
+    segment_dict = {}
+    for file_path in os.listdir(audio_dir):
+
+        if file_path.endswith('.wav') or file_path.endswith('.mp3'):
+            filename = os.path.basename(file_path).split('.')[0]
+            song_id = filename.split(separator)[0]
+
+            if song_id in segment_dict:
+                segment_dict[song_id].append(filename)
+            else:
+                segment_dict[song_id] = [filename]
+
+    return segment_dict

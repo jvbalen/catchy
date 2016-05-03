@@ -1,5 +1,5 @@
 
-from __future__ import division
+from __future__ import division, print_function
 
 import os
 import numpy as np
@@ -40,7 +40,7 @@ def compute_and_write(data_dir, track_list=None, features=None):
         features = {'pitchhist': (get_pitchhist, {}),
                     'pitchhist2': (get_pitchhist2, {}),
                     'pitchhist3': (get_pitchhist3, {}),
-                    'pitchhist3_int': (get_pitchhist3, {'intervals': True}),
+                    'pitchhist3_int': (get_pitchhist3, {'intervals': True, 'diagfactor': 1, 'sqrt': False}),
                     'chromahist2': (get_chromahist2, {}),
                     'chromahist3': (get_chromahist3, {}),
                     'chromahist3_int': (get_chromahist3, {'intervals': True}),
@@ -90,11 +90,13 @@ def get_pitchhist(track_id, minpitch=33, maxpitch=93, bpo=12):
     return pitchhist  # bincenters
 
 
-def get_pitchhist2(track_id, win=0.5, diagfactor=1, sqrt=False, intervals=False):
+def get_pitchhist2(track_id, win=0.5, diagfactor=1, norm=True, sqrt=False, intervals=False):
     t, melstm, melmat = two_melody_matrices(track_id, win=win)
     pitchbihist = co_occurrence([melstm, melmat], mode='dot')
     if diagfactor < 1:
         pitchbihist = scalediag(pitchbihist, diagfactor)
+    if norm:
+        pitchbihist = pitchbihist * 1.0 / np.sum(pitchbihist)
     if sqrt:
         pitchbihist = np.sqrt(pitchbihist)
     if intervals:
@@ -102,13 +104,15 @@ def get_pitchhist2(track_id, win=0.5, diagfactor=1, sqrt=False, intervals=False)
     return pitchbihist
 
 
-def get_pitchhist3(track_id, win=0.5, diagfactor=0, norm=True, intervals=False):
+def get_pitchhist3(track_id, win=0.5, diagfactor=1, norm=True, sqrt=False, intervals=False):
     t, melstm, melmat, melfwd = three_melody_matrices(track_id, win)
     pitchtrihist = co_occurrence([melstm, melmat, melfwd], mode='dot')
     if diagfactor < 1:
         pitchtrihist = scalediag(pitchtrihist, diagfactor)
     if norm:
         pitchtrihist = pitchtrihist * 1.0 / np.sum(pitchtrihist)
+    if sqrt:
+        pitchtrihist = np.sqrt(pitchtrihist)
     if intervals:
         pitchtrihist = to_intervals(pitchtrihist) 
     return pitchtrihist
@@ -122,11 +126,13 @@ def get_chromahist(track_id, norm=True):
     return chromahist
 
 
-def get_chromahist2(track_id, diagfactor=1, mode='corr', sqrt=False, intervals=False):
+def get_chromahist2(track_id, mode='dot', diagfactor=1, norm=True, sqrt=False, intervals=False):
     tchr, chroma, tmel, melody = aligned_pitch_features(track_id)
     chromacorr = co_occurrence([chroma], mode=mode)
     if diagfactor < 1:
         chromacorr = scalediag(chromacorr, diagfactor)
+    if norm:
+        chromacorr = chromacorr * 1.0 / np.sum(chromacorr)
     if sqrt:
         chromacorr = np.sqrt(chromacorr)
     if intervals:
@@ -134,28 +140,34 @@ def get_chromahist2(track_id, diagfactor=1, mode='corr', sqrt=False, intervals=F
     return chromacorr
 
 
-def get_chromahist3(track_id, win=0.5, diagfactor=0, mode='corr', norm=True, intervals=False):
+def get_chromahist3(track_id, mode='dot', diagfactor=1, norm=True, sqrt=False, intervals=False):
     tchr, chroma, tmel, melody = aligned_pitch_features(track_id)
     chromatrihist = co_occurrence([chroma, chroma, chroma], mode=mode)
     if diagfactor < 1:
         chromatrihist = scalediag(chromatrihist, diagfactor)
     if norm:
         chromatrihist = chromatrihist * 1.0 / np.sum(chromatrihist)
+    if sqrt:
+        chromatrihist = np.sqrt(chromatrihist)
     if intervals:
         chromatrihist = to_intervals(chromatrihist)
     return chromatrihist
 
 
-def get_harmonisation(track_id, diagfactor=0, intervals=False):
+def get_harmonisation(track_id, mode='dot', diagfactor=1, norm=True, sqrt=False, intervals=False):
     tchr, chroma, tmel, melody = aligned_pitch_features(track_id)
     dt = tchr[1] - tchr[0]
     chroma = chroma[2:, :] * dt     # cropping is for exact matlab correspondence
     t, melmat = one_melody_matrix(track_id)
     melmat = np.array(melmat)
     melmat = melmat[2:, :]          # cropping is for exact matlab correspondence
-    harmonisation = co_occurrence([melmat, chroma], mode='dot')
+    harmonisation = co_occurrence([melmat, chroma], mode=mode)
     if diagfactor < 1:
         harmonisation = scalediag(harmonisation, diagfactor)
+    if norm:
+        harmonisation = harmonisation * 1.0 / np.sum(harmonisation)
+    if sqrt:
+        harmonisation = np.sqrt(harmonisation)
     if intervals:
         harmonisation = to_intervals(harmonisation)
     return harmonisation
@@ -306,8 +318,6 @@ def co_occurrence(mats, mode='dot', verbose=False):
     # feature co_occurrence within one multi-dimensional features
     if len(mats) == 1:
         x = mats[0]
-        # if verbose:
-        #     print 'type of x in co-occurrence computation: ' + str(type(x))
         if mode == 'dot':
             cont = x.T.dot(x)  # equivalent of x' * y
         elif mode == 'corr':
