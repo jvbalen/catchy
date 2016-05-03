@@ -98,7 +98,7 @@ def get_hpcp(x, sr, n_bins=12, f_min=55, f_ref=440.0, min_magn=-100):
     return t, hpcp
 
 
-def get_melody(x, sr, f_min=55, f_max=1760, min_salience=0.0, unvoiced=False):
+def get_melody(x, sr, f_min=55, f_max=1760, min_salience=0.0, unvoiced=True):
     """Extract main melody from raw audio using the Melodia Vamp plugin.
     Vamp, vamp python module and plug-in must be installed.
     
@@ -121,8 +121,9 @@ def get_melody(x, sr, f_min=55, f_max=1760, min_salience=0.0, unvoiced=False):
     
     if unvoiced:
         f0 = abs(f0)
+        f0[f0 == 0] = None
     else:
-        f0[f0 < 0] = None
+        f0[f0 <= 0] = None
 
     hz2midi = lambda f: 69 + 12 * np.log2(abs(f) / 440)
     

@@ -75,6 +75,7 @@ function [t_bark, loudness, sharpness] = barkfeatures(x, sr)
     [n N p_out] = ma_sone(x, p);
     
     hop = p_out.hopsize;
+    [nbands nframes] = size(n);
     t_bark = (0.5:nframes)'*hop/sr;
 
     loudness = N;
@@ -82,7 +83,6 @@ function [t_bark, loudness, sharpness] = barkfeatures(x, sr)
     % Compute Sharpness
     disp('Computing sharpness...')
     
-    [nbands ~] = size(n);
     z1 = 1:15;
     z2 = 16:nbands;
     Z = diag([z1 z2]);
