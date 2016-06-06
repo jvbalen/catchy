@@ -31,7 +31,9 @@ def compute_and_write(audio_dir, data_dir, features=None):
         """
     
     if features is None:
-        features = {'mfcc': get_mfcc, 'hpcp': get_hpcp, 'melody': get_melody}
+        features = {'mfcc': get_mfcc,
+                    'hpcp': get_hpcp, 'melody': get_melody,
+                    'beats': get_beats,  'onsets': get_onsets}
 
     filenames = os.listdir(audio_dir)
     for filename in filenames:
@@ -133,6 +135,47 @@ def get_melody(x, sr, f_min=55, f_max=1760, min_salience=0.0, unvoiced=True):
     t = float(vamp_hop) * (8 + np.arange(len(melody)))
     
     return t, melody
+
+
+def get_beats(x, sr):
+    """Track beats in an audio excerpt, using librosa's standard
+        beat tracker.
+
+    Args:
+        x (1d-array) audio signal, mono
+        sr (int): sample rate
+
+    Returns:
+        2d-array: beat times and beat intervals
+    """
+
+    beat_frames = librosa.beat.beat_track(x, sr=sr)
+    beat_times = librosa.frames_to_time(beat_frames, sr=sr)
+
+    t = beat_times[:-1,]
+    beats_intervals = np.diff(beat_times)
+
+    return t, beat_intervals
+
+
+def get_onsets(x, sr):
+    """Compute inter-onset intervals (IOI) from audio, using librosa.
+
+    Args:
+        x (1d-array) audio signal, mono
+        sr (int): sample rate
+
+    Returns:
+        2d-array: onset times and IOI
+    """
+
+    onset_frames = librosa.onset.onset_detect(x, sr=sr)
+    onset_times = librosa.frames_to_time(onset_frames, sr=sr)
+
+    t = onset_times[:-1,]
+    onset_intervals = np.diff(onset_times)
+
+    return t, onset_intervals
 
 
 if __name__ == '__main__':

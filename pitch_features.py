@@ -18,8 +18,6 @@ def compute_and_write(data_dir, track_list=None, features=None):
     """Compute frame-based features for all audio files in a folder.
 
     Args:
-        melody_dir (str): where to find melody data
-        chroma_dir (str): where to find chroma data
         data_dir (str): where to write features
         track_list (str or None): list of file ids. Set to None to infer from
             files in melody_dir and chroma_dir (the intersection is used).
@@ -28,7 +26,11 @@ def compute_and_write(data_dir, track_list=None, features=None):
             parameter dictionary.
             Feature extraction functions can be any function that returns one
                 or more 1d or 2d-arrays that share their first dimension.
-        """
+
+    Required global variables:
+        melody_dir (str): where to find melody data
+        chroma_dir (str): where to find chroma data
+    """
     
     if track_list is None:
         melody_ids = [filename.split('.')[0] for filename in os.listdir(melody_dir)]
