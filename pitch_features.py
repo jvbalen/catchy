@@ -391,10 +391,3 @@ def getdiag(x):
         iii = (i, i, i)
         diag = np.ravel_multi_index(iii, shp)
     return diag
-
-
-## ------------------- Main
-
-
-if __name__ == '__main__':
-    compute_and_write(sys.argv[1], sys.argv[2])

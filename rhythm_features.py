@@ -3,6 +3,7 @@ from __future__ import division, print_function
 
 import os
 import numpy as np
+from bisect import bisect
 
 import utils
 
@@ -17,7 +18,7 @@ def compute_and_write(data_dir, track_list=None, features=None):
     Args:
         data_dir (str): where to write features
         track_list (str or None): list of file ids. Set to None to infer from
-            files in ioi_dir and chroma_dir.
+            files in beats_dir and onsets_dir.
         features (dict): dictionary with (unique) feature names as keys and 
             tuples as values, each containing a feature extraction function and a
             parameter dictionary.
@@ -55,7 +56,7 @@ def get_ioi_hist(track_id, min_length = -7, max_length = 0, step=1):
     """Compute a IOI histogram, with bins logarithmically spaced between
             `min_length` (def: -7) and `max_length` (0), with step `step`.
     """
-    t, ioi = get_norm_ioi(track_id)
+    t, ioi = get_normalized_ioi(track_id)
 
     log_ioi = np.log2(ioi)
 
@@ -89,10 +90,21 @@ def get_onsets(track_id):
     return t, ioi
 
 
-# TODO
-def get_norm_ioi(track_id):
-    pass
+def get_normalized_ioi(track_id):
+    """Read beat and IOI data and return IOI normalized by
+        beat length.
+    """
+    beat_times, beat_intervals = get_beats(track_id)
+    onset_times, onset_intervals = get_onsets(track_id)
 
+    # prepend a beat at t=0
+    if not beat_times[0] == 0:
+        np.insert(beat_times, 0, 0)
+        np.insert(beat_intervals, 0, beat_times[0])
 
-if __name__ == '__main__':
-    compute_and_write(sys.argv[1], sys.argv[2])
+    norm_ioi = []
+    for t, ioi in zip(onset_times, onset_intervals)
+        i = bisect(beat_times, t) - 1  # find in sorted list
+        norm_ioi.append(ioi / beat_intervals[i])
+
+    return onset_times, norm_ioi
