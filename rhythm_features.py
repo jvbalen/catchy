@@ -30,10 +30,15 @@ def compute_and_write(data_dir, track_list=None, features=None):
         onsets_dir (str): where to find onset data
     """
     if track_list is None:
-        track_list = [filename.split('.')[0] for filename in os.listdir(ioi_dir)]
-    
+        onsets_ids = [filename.split('.')[0] for filename in os.listdir(onsets_dir)]
+        beats_ids = [filename.split('.')[0] for filename in os.listdir(beats_dir)]
+
+        track_list = list(set(onsets_ids + beats_ids))
+
     if features is None:
-        features = {'ioihist': (get_ioi_hist, {})}
+        features = {'tempo': (local_tempo, {}),
+                    'ioi': (ioi_histogram, {}),
+                    'ioihist': (ioi_histogram, {'min_length': -3, 'max_length': 3, 'step': 0.5})}
 
     for track_id in track_list:
 
@@ -52,22 +57,50 @@ def compute_and_write(data_dir, track_list=None, features=None):
             utils.write_feature(X, [data_dir, feature, track_id])
 
 
-def get_ioi_hist(track_id, min_length = -7, max_length = 0, step=1):
+def ioi_histogram(track_id, min_length = -3, max_length = 3, step=0.5):
     """Compute a IOI histogram, with bins logarithmically spaced between
-            `min_length` (def: -7) and `max_length` (0), with step `step`.
+        `min_length` (def: -3) and `max_length` (3), with step `step` (0.5).
     """
-    t, ioi = get_normalized_ioi(track_id)
+    ioi = get_normalized_ioi(track_id)
 
     log_ioi = np.log2(ioi)
 
     halfstep = step / 2.0
     nbins = (max_length - min_length) / step + 1
-    binedges = np.linspace(minpitch - halfstep, maxpitch + halfstep, nbins + 1)
+    binedges = np.linspace(min_length - halfstep, max_length + halfstep, nbins + 1)
 
     ioi_hist, _ = np.histogram(log_ioi, binedges)
     ioi_hist = ioi_hist / np.sum(ioi_hist)
 
     return ioi_hist
+
+
+def normalized_ioi(track_id):
+    """Read beat and IOI data and return IOI normalized by
+        beat length.
+    """
+    beat_times, beat_intervals = get_beats(track_id)
+    onset_times, onset_intervals = get_onsets(track_id)
+
+    # prepend a beat at t=0
+    if not beat_times[0] == 0:
+        np.insert(beat_times, 0, 0)
+        np.insert(beat_intervals, 0, beat_times[0])
+
+    norm_ioi = []
+    for t, ioi in zip(onset_times, onset_intervals):
+        i = bisect(beat_times, t) - 1  # find in sorted list
+        norm_ioi.append(ioi / beat_intervals[i])
+
+    return norm_ioi
+
+
+def local_tempo(track_id):
+    """ Read beat intervals and convert to local tempo
+        (LT = 60/BI)
+    """
+    _, beat_intervals = get_beats(track_id)
+    return 60 / beat_intervals
 
 
 def get_beats(track_id):
@@ -88,23 +121,3 @@ def get_onsets(track_id):
     onsets_file = os.path.join(onsets_dir, track_id + '.csv')
     t, ioi = utils.read_feature(onsets_file, time=True)
     return t, ioi
-
-
-def get_normalized_ioi(track_id):
-    """Read beat and IOI data and return IOI normalized by
-        beat length.
-    """
-    beat_times, beat_intervals = get_beats(track_id)
-    onset_times, onset_intervals = get_onsets(track_id)
-
-    # prepend a beat at t=0
-    if not beat_times[0] == 0:
-        np.insert(beat_times, 0, 0)
-        np.insert(beat_intervals, 0, beat_times[0])
-
-    norm_ioi = []
-    for t, ioi in zip(onset_times, onset_intervals)
-        i = bisect(beat_times, t) - 1  # find in sorted list
-        norm_ioi.append(ioi / beat_intervals[i])
-
-    return onset_times, norm_ioi
