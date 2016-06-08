@@ -149,11 +149,11 @@ def get_beats(x, sr):
         2d-array: beat times and beat intervals
     """
 
-    beat_frames = librosa.beat.beat_track(x, sr=sr)
+    _, beat_frames = librosa.beat.beat_track(x, sr=sr)
     beat_times = librosa.frames_to_time(beat_frames, sr=sr)
 
     t = beat_times[:-1,]
-    beats_intervals = np.diff(beat_times)
+    beat_intervals = np.diff(beat_times)
 
     return t, beat_intervals
 

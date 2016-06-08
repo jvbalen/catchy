@@ -219,7 +219,7 @@ def two_melody_matrices(track_id, win=4.0):
 
     t, melmat = one_melody_matrix(track_id)
     dt = t[1] - t[0]
-    nkern = np.round(win / dt)
+    nkern = int(np.round(win / dt))
     kern1 = np.zeros((nkern + 1, 1))
     kern2 = np.ones((nkern, 1))
     kern = np.vstack((kern1, kern2))

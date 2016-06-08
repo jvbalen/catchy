@@ -6,6 +6,7 @@ import pandas as pd
 
 
 # what to do if skip_cols == 'auto'
+#   (this is used in feature_transforms.py)
 column_range = {'loudness': (1, None),
                 'sharpness': (1, None),
                 'roughness': (1, None),
