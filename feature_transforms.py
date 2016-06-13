@@ -157,7 +157,7 @@ def second_order(features, aggregates, verbose=False):
         elif aggregate == 'crossentropy' or aggregate == 'information':
             m = np.sum(features, axis=0)
             m = m.flatten()/np.sum(m)
-            features = [-np.dot(f.flatten()/np.sum(f), np.log(m)) for f in features]
+            features = [-np.nansum(np.log(m) * f.flatten()/np.sum(f)) for f in features]
 
         elif aggregate == 'pdf':
             n, d = features.shape
@@ -171,6 +171,7 @@ def second_order(features, aggregates, verbose=False):
             kde = nn.KernelDensity(bandwidth=1.0)
             scores = np.zeros(len(features))
             for feat_dim in features.T:
+                feat_dim = feat_dim.reshape([-1, 1])
                 kde.fit(feat_dim)
                 scores += kde.score_samples(feat_dim)
             features = np.exp(scores)
