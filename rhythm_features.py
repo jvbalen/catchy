@@ -37,7 +37,7 @@ def compute_and_write(data_dir, track_list=None, features=None):
 
     if features is None:
         features = {'tempo': (local_tempo, {}),
-                    'ioi': (ioi_histogram, {}),
+                    'ioi': (log_ioi, {}),
                     'ioihist': (ioi_histogram, {'min_length': -3, 'max_length': 3, 'step': 0.5})}
 
     for track_id in track_list:
@@ -50,8 +50,8 @@ def compute_and_write(data_dir, track_list=None, features=None):
             func, params = features[feature]
             X = func(track_id, **params)
 
-            # normalize (!) and flatten
-            X = X.flatten() / np.sum(X)
+            # flatten
+            X = X.flatten()
 
             # write
             utils.write_feature(X, [data_dir, feature, track_id])
@@ -61,18 +61,25 @@ def ioi_histogram(track_id, min_length = -3, max_length = 3, step=0.5):
     """Compute a IOI histogram, with bins logarithmically spaced between
         `min_length` (def: -3) and `max_length` (3), with step `step` (0.5).
     """
-    ioi = get_normalized_ioi(track_id)
-
-    log_ioi = np.log2(ioi)
+    ioi = log_ioi(track_id)
 
     halfstep = step / 2.0
     nbins = (max_length - min_length) / step + 1
     binedges = np.linspace(min_length - halfstep, max_length + halfstep, nbins + 1)
 
-    ioi_hist, _ = np.histogram(log_ioi, binedges)
+    ioi_hist, _ = np.histogram(ioi, binedges)
     ioi_hist = ioi_hist / np.sum(ioi_hist)
 
     return ioi_hist
+
+
+def log_ioi(track_id):
+    """Read beat and IOI data and return the log of the IOI
+        normalized by beat length.
+    """
+    ioi = normalized_ioi(track_id)
+    
+    return np.array(np.log2(ioi))
 
 
 def normalized_ioi(track_id):
@@ -92,7 +99,7 @@ def normalized_ioi(track_id):
         i = bisect(beat_times, t) - 1  # find in sorted list
         norm_ioi.append(ioi / beat_intervals[i])
 
-    return norm_ioi
+    return norm_ioi 
 
 
 def local_tempo(track_id):
