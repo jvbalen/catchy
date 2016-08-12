@@ -2,7 +2,7 @@
 
 **Corpus Analysis Tools for Computational Hook discoverY**
 
-![Module Diagram]("https://github.com/jvbalen/catchy/blob/master/catchy%20modules.png")
+![Module Diagram](https://github.com/jvbalen/catchy/blob/master/catchy%20modules.png)
 
 Python tools for the corpus analysis of popular music recordings.
 
