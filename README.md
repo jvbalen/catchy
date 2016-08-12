@@ -1,8 +1,10 @@
 ## CATCHY
 
-**Corpus Analysis Tools for Computational Hook discoverY**
+### Corpus Analysis Tools for Computational Hook discovery
 
 Python tools for the corpus analysis of popular music recordings. The tools can be used separately or together. I.e.: you can use your own psychoacoustic features and still use the other modules. Note that to use all scripts, it is assumed that audio files come pre-segmented (e.g., into structural sections).
+
+The base feature modules' requirements include Matlab, Librosa and VAMP.
 
 ### Structure
 
