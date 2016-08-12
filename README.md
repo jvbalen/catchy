@@ -8,7 +8,7 @@ The base feature modules' requirements include Matlab, Librosa and VAMP.
 
 ### Structure
 
-Extracting catchy features from a folder of files involves three steps:
+Extracting catchy features from a folder of files involves three steps (look for the `eurovision_demo.ipynb` ipython notebook for a more detailed demo):
 
 1. Base feature extraction
 
@@ -32,6 +32,7 @@ The above three steps correspond to the three columns in below diagram.
 - i/o currently very conservative--you may have to do your own mkdirs when writing features.
 
 - Matlab path handling hasn't been checked on other machines than mine.
+
 Hopefully these will be addressed soon.
 
 ### License
