@@ -8,6 +8,10 @@ from bisect import bisect
 import utils
 
 
+""" Rhythm features module.
+"""
+
+
 onsets_dir = ''
 beats_dir = ''
 
@@ -38,7 +42,9 @@ def compute_and_write(data_dir, track_list=None, features=None):
     if features is None:
         features = {'tempo': (local_tempo, {}),
                     'ioi': (log_ioi, {}),
-                    'ioihist': (ioi_histogram, {'min_length': -3, 'max_length': 3, 'step': 0.5})}
+                    'ioihist': (ioi_histogram, {'min_length': -3, 'max_length': 3, 'step': 0.5})
+                    'rpvi': (raw_pvi, {'normalize_iois': False}),
+                    'npvi': (norm_pvi, {'normalize_iois': False})}
 
     for track_id in track_list:
 
@@ -100,6 +106,36 @@ def normalized_ioi(track_id):
         norm_ioi.append(ioi / beat_intervals[i])
 
     return norm_ioi 
+
+
+def raw_pvi(track_id, normalize_ioi=False):
+    """Compute raw (unnormalized) pairwise variability index of inter-onset
+        intervals.
+
+    Set normalize_ioi = True to compute PVI from beat-normalized IOI.
+    """
+    if normalize_ioi:
+        onset_intervals = normalized_ioi(track_id)
+    else:
+        _, onset_intervals = get_onsets(track_id)
+
+    rpvi = np.mean(np.abs(np.diff(onset_intervals)))  # is it? check!
+    return rpvi
+
+
+def norm_pvi(track_id, normalize_ioi=False):
+    """Compute unnormalized pairwise variability index of inter-onset intervals.
+
+    Set normalize_ioi = True to compute PVI from beat-normalized IOI.
+    """
+    if normalize_ioi:
+        onset_intervals = normalized_ioi(track_id)
+    else:
+        _, onset_intervals = get_onsets(track_id)
+    
+    norm_terms = (onset_intervals[:-1] + onset_intervals[1:]) / 2.0
+    npvi = np.mean(np.abs(np.diff(onset_intervals)) / norm_terms)  # check this
+    return 100 * npvi
 
 
 def local_tempo(track_id):
