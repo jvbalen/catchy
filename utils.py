@@ -6,13 +6,16 @@ import pandas as pd
 
 
 # what to do if skip_cols == 'auto'
+#   (this is used in feature_transforms.py)
 column_range = {'loudness': (1, None),
                 'sharpness': (1, None),
                 'roughness': (1, None),
                 'bands': (1, None),
                 'melody': (1, None),
                 'hpcp': (1, None),
-                'mfcc': (2, 14)}
+                'mfcc': (2, 14),
+                'beats': (1, None),
+                'onsets': (1, None)}
 
 
 def read_feature(filename, mode='pandas', time=False, skip_cols=(0, None)):
@@ -76,19 +79,19 @@ def write_feature(data, filename):
         >>> # simplest case
         >>> # write an array of ones to temp.csv
         >>> X = np.ones((100, 30))
-        >>> write_csv(X, 'temp.csv')
+        >>> write_feature(X, 'temp.csv')
 
         >>> # with lists
         >>> # write indexed array of ones to data/ones/0.csv
         >>> t = np.arange(100)
         >>> X = np.ones((100, 30))
         >>> feature_name, id = 'ones', str(0)
-        >>> write_csv([t, X], ['data', feature_name, id])
+        >>> write_feature([t, X], ['data', feature_name, id])
     """
 
     # if data is a list of nd-arrays, hstack as 2d-arrays
     if type(data) is list:
-        for i in np.where([len(x.shape) == 1 for x in data]):
+        for i in np.where([len(x.shape) == 1 for x in data])[0]:  # check if better solution than [0]
             data[i] = data[i][:, np.newaxis]
         data = np.hstack(data)
     elif len(data.shape) == 1:
@@ -99,6 +102,11 @@ def write_feature(data, filename):
         filename = os.path.join(*filename)
     if not (filename.endswith('.csv') or filename.endswith('.txt')):
         filename += '.csv'
+
+    dirname = os.path.dirname(filename)
+    if not os.path.isdir(dirname):
+        print('making new dir ' + dirname)
+        os.makedirs(dirname)
 
     dataframe = pd.DataFrame(data)
     dataframe.to_csv(filename, header=False, index=False)
