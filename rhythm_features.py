@@ -41,10 +41,10 @@ def compute_and_write(data_dir, track_list=None, features=None):
 
     if features is None:
         features = {'tempo': (local_tempo, {}),
-                    'ioi': (log_ioi, {}),
-                    'ioihist': (ioi_histogram, {'min_length': -3, 'max_length': 3, 'step': 0.5})
-                    'rpvi': (raw_pvi, {'normalize_iois': False}),
-                    'npvi': (norm_pvi, {'normalize_iois': False})}
+                    'log_norm_ioi': (log_ioi, {'normalize_ioi': True}),
+                    'log_norm_ioi_hist': (ioi_histogram, {'min_length': -3, 'max_length': 3, 'step': 0.5}),
+                    'rpvi': (raw_pvi, {'normalize_ioi': False}),
+                    'npvi': (norm_pvi, {'normalize_ioi': False})}
 
     for track_id in track_list:
 
@@ -79,13 +79,16 @@ def ioi_histogram(track_id, min_length = -3, max_length = 3, step=0.5):
     return ioi_hist
 
 
-def log_ioi(track_id):
+def log_ioi(track_id, normalize_ioi=True):
     """Read beat and IOI data and return the log of the IOI
         normalized by beat length.
     """
-    ioi = normalized_ioi(track_id)
+    if normalize_ioi:
+        onset_intervals = normalized_ioi(track_id)
+    else:
+        _, onset_intervals = get_onsets(track_id)
     
-    return np.array(np.log2(ioi))
+    return np.array(np.log2(onset_intervals))
 
 
 def normalized_ioi(track_id):
@@ -108,18 +111,40 @@ def normalized_ioi(track_id):
     return norm_ioi 
 
 
+# TODO: remove ioii or refactor all 3 functions below
+
+
+def ioii(track_id, normalize_ioi=False):
+    """Compute IOII, i.e., delta IOI.
+
+    Set normalize_ioi = True to compute from beat-normalized IOI.
+    """
+
+    if normalize_ioi:
+        onset_intervals = normalized_ioi(track_id)
+    else:
+        _, onset_intervals = get_onsets(track_id)
+
+    ioi_diff = np.abs(np.diff(onset_intervals, axis=0))
+
+    return ioi_diff
+
+
 def raw_pvi(track_id, normalize_ioi=False):
     """Compute raw (unnormalized) pairwise variability index of inter-onset
         intervals.
 
     Set normalize_ioi = True to compute PVI from beat-normalized IOI.
     """
+
     if normalize_ioi:
         onset_intervals = normalized_ioi(track_id)
     else:
         _, onset_intervals = get_onsets(track_id)
 
-    rpvi = np.mean(np.abs(np.diff(onset_intervals)))  # is it? check!
+    ioi_diff = np.abs(np.diff(onset_intervals, axis=0))
+    rpvi = np.mean(ioi_diff)  # is it? check!
+
     return rpvi
 
 
@@ -132,9 +157,11 @@ def norm_pvi(track_id, normalize_ioi=False):
         onset_intervals = normalized_ioi(track_id)
     else:
         _, onset_intervals = get_onsets(track_id)
-    
-    norm_terms = (onset_intervals[:-1] + onset_intervals[1:]) / 2.0
-    npvi = np.mean(np.abs(np.diff(onset_intervals)) / norm_terms)  # check this
+
+    ioi_diff = np.abs(np.diff(onset_intervals, axis=0))
+    norm_terms = (onset_intervals[:-1] + onset_intervals[1:]) / 2.0    
+    npvi = np.mean(ioi_diff / norm_terms)  # check this
+
     return 100 * npvi
 
 
@@ -147,7 +174,7 @@ def local_tempo(track_id):
 
 
 def get_beats(track_id):
-    """Read beat data from file beats_dir + track_id + '.csv'.
+    """Read beat times and intervals from file beats_dir + track_id + '.csv'.
     File should contain a time column followed by one column of
         beat intervals.
     """
@@ -157,7 +184,7 @@ def get_beats(track_id):
 
 
 def get_onsets(track_id):
-    """Read ioi data from file onsets_dir + track_id + '.csv'.
+    """Read onset times and intervals from file onsets_dir + track_id + '.csv'.
     File should contain a time column followed by one column of
         inter-onset intervals.
     """
