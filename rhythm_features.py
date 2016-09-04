@@ -111,7 +111,11 @@ def normalized_ioi(track_id):
     return norm_ioi 
 
 
-# TODO: remove ioii or refactor all 3 functions below
+# TODO: remove IOII or refactor all 3 functions below
+#    (ioii is now in place because feature_transforms module doesn't like
+#    0-dimensional data. currently the easiest way to get 2nd-order features
+#    based on rPVI is to compute ioii here and take the mean as part of
+#    feature transforms.)
 
 
 def ioii(track_id, normalize_ioi=False):
