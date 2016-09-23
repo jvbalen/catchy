@@ -181,7 +181,7 @@ def second_order(features, aggregates, verbose=False):
             kde = stats.gaussian_kde(features)
             features = [kde.integrate_box(f0, f) for f in features]
         elif aggregate == 'rank':
-            features = (np.argsort(features) + 0.5) * (1.0 / len(features))
+            features = (np.argsort(np.argsort(features)) + 0.5) * (1.0 / len(features))
 
     # features = [np.squeeze(f) for f in features]
     return features
