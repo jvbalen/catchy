@@ -33,18 +33,19 @@ def compute_and_write(data_dir, track_list=None, features=None):
         beats_dir (str): where to find beat data
         onsets_dir (str): where to find onset data
     """
-    if track_list is None:
-        onsets_ids = [filename.split('.')[0] for filename in os.listdir(onsets_dir)]
-        beats_ids = [filename.split('.')[0] for filename in os.listdir(beats_dir)]
-
-        track_list = list(set(onsets_ids + beats_ids))
-
     if features is None:
         features = {'tempo': (local_tempo, {}),
                     'log_norm_ioi': (log_ioi, {'normalize_ioi': True}),
                     'log_norm_ioi_hist': (ioi_histogram, {'min_length': -3, 'max_length': 3, 'step': 0.5}),
                     'rpvi': (raw_pvi, {'normalize_ioi': False}),
                     'npvi': (norm_pvi, {'normalize_ioi': False})}
+
+    if track_list is None:
+        onsets_ids = [filename.split('.')[0] for filename in os.listdir(onsets_dir)]
+        beats_ids = [filename.split('.')[0] for filename in os.listdir(beats_dir)]
+
+        track_list = list(set(onsets_ids + beats_ids))
+
 
     for track_id in track_list:
 
@@ -61,6 +62,9 @@ def compute_and_write(data_dir, track_list=None, features=None):
 
             # write
             utils.write_feature(X, [data_dir, feature, track_id])
+
+
+# feature functions
 
 
 def ioi_histogram(track_id, min_length = -3, max_length = 3, step=0.5):
@@ -174,7 +178,16 @@ def local_tempo(track_id):
         (LT = 60/BI)
     """
     _, beat_intervals = get_beats(track_id)
-    return 60 / beat_intervals
+
+    if beat_intervals.size > 0:
+        tempo = 60 / beat_intervals 
+    else:
+        tempo = np.array([np.nan])
+
+    return tempo
+
+
+# I/O helper methods
 
 
 def get_beats(track_id):
@@ -182,7 +195,7 @@ def get_beats(track_id):
     File should contain a time column followed by one column of
         beat intervals.
     """
-    beats_file = os.path.join(beats_dir, track_id + '.csv')
+    beats_file = os.path.join(beats_dir, str(track_id) + '.csv')
     t, beat_intervals = utils.read_feature(beats_file, time=True)
     return t, beat_intervals
 
@@ -192,6 +205,6 @@ def get_onsets(track_id):
     File should contain a time column followed by one column of
         inter-onset intervals.
     """
-    onsets_file = os.path.join(onsets_dir, track_id + '.csv')
+    onsets_file = os.path.join(onsets_dir, str(track_id) + '.csv')
     t, ioi = utils.read_feature(onsets_file, time=True)
     return t, ioi

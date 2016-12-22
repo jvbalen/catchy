@@ -48,10 +48,13 @@ def read_feature(filename, mode='pandas', time=False, skip_cols=(0, None)):
         skip_cols = skip_columns(subdir_name)
 
     # pick csv reader
-    if mode == 'numpy':
-        data = np.genfromtxt(filename, delimiter=',')
-    elif mode == 'pandas':
-        data = pd.read_csv(filename, delimiter=',', header=None).values
+    try:
+        if mode == 'numpy':
+            data = np.genfromtxt(filename, delimiter=',')
+        elif mode == 'pandas':
+            data = pd.read_csv(filename, delimiter=',', header=None).values
+    except ValueError:
+        data = np.array([[0]])
 
     feature = data[:, skip_cols[0]:skip_cols[1]]
 
