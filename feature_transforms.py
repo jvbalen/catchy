@@ -161,11 +161,15 @@ def second_order(features, aggregates, verbose=False):
 
         elif aggregate == 'pdf':
             n, d = features.shape
-            bw_factor = n**(-1./(5)) * np.std(features) if d == 1 else 1.0
+            finite_rows = np.all(np.isfinite(features), axis=1)
+            features = features[finite_rows]
+            s = np.std(features)
+            bw_factor = n**(-1./(5))*s if d == 1 and s > 0.0 else 1.0
             kde = nn.KernelDensity(bandwidth=bw_factor)
             kde.fit(features)
             scores = kde.score_samples(features)
-            features = np.exp(scores)
+            features = np.zeros((n,))
+            features[finite_rows] = np.exp(scores)
         elif aggregate == 'indeppdf':
             # above for independent dimensions: fit each dim and add log scores
             kde = nn.KernelDensity(bandwidth=1.0)
